@@ -1,0 +1,22 @@
+Entorno Virtual
+/venv/
+.env
+
+Archivos de Python generados
+pycache/
+*.pyc
+*.pyo
+
+Base de datos local de SQLite (si la usas)
+*.db
+
+Archivos de sesión de Flask
+flask_session/
+
+Archivos específicos de Flask/Web
+instance/
+.flaskenv
+
+Archivos de sistema operativo y editores
+.DS_Store
+.vscode/

@@ -1,0 +1,75 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block title %}Inicio - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto text-center">
+        <h1 class="mb-4">Bienvenido a RENACEHOGARES</h1>
+        <p class="lead">Sistema de Gestión de Ayuda para Víctimas de Desastres Naturales</p>
+        
+        <div class="card mb-4">
+            <div class="card-body p-5">
+                <h2 class="card-title mb-4">¿Necesitas ayuda después de un desastre natural?</h2>
+                <p class="card-text mb-4">
+                    RENACEHOGARES es una plataforma diseñada para facilitar el acceso a la ayuda gubernamental 
+                    para la rehabilitación de viviendas afectadas por inundaciones, deslizamientos y otros desastres naturales 
+                    en el municipio de Caucasia, Antioquia.
+                </p>
+                
+                <div class="row mt-5">
+                    <div class="col-md-4 mb-3">
+                        <div class="text-primary mb-3">
+                            <i class="bi bi-file-earmark-text" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5>Registra tu solicitud</h5>
+                        <p>Completa el formulario con la información sobre los daños sufridos</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-primary mb-3">
+                            <i class="bi bi-clock-history" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5>Seguimiento en tiempo real</h5>
+                        <p>Monitorea el estado de tu solicitud desde cualquier dispositivo</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="text-primary mb-3">
+                            <i class="bi bi-house-check" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5>Recibe ayuda</h5>
+                        <p>Obtén la asistencia necesaria para rehabilitar tu vivienda</p>
+                    </div>
+                </div>
+                
+                {% if not session.usuario_id %}
+                <div class="mt-5">
+                    <a href="{{ url_for('registro') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="bi bi-person-plus"></i> Registrarse
+                    </a>
+                    <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </a>
+                </div>
+                {% else %}
+                <div class="mt-5">
+                    <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> Crear Nueva Solicitud
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <h4 class="card-title">Base Legal</h4>
+                <p class="card-text">
+                    Este sistema se apoya en la <strong>LEY 1523 DE 2012</strong> que establece la política nacional 
+                    de gestión del riesgo de desastres y el sistema nacional de gestión del riesgo de desastres.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

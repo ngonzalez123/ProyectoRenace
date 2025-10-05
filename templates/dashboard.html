@@ -1,0 +1,63 @@
+<!-- templates/dashboard.html -->
+{% extends "base.html" %}
+
+{% block title %}Dashboard - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2>Mis Solicitudes</h2>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Nueva Solicitud
+        </a>
+    </div>
+</div>
+
+{% if solicitudes %}
+    <div class="row">
+        {% for solicitud in solicitudes %}
+            <div class="col-lg-6 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Solicitud #{{ solicitud.id }}</h5>
+                        <span class="estado-badge estado-{{ solicitud.estado.lower() }}">
+                            {{ solicitud.estado }}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2"><strong>Tipo de desastre:</strong> {{ solicitud.tipo_desastre }}</p>
+                        <p class="mb-2"><strong>Fecha del desastre:</strong> {{ solicitud.fecha_desastre.strftime('%d/%m/%Y') }}</p>
+                        <p class="mb-2"><strong>Dirección afectada:</strong> {{ solicitud.direccion_afectada }}</p>
+                        <p class="mb-2"><strong>Prioridad:</strong> 
+                            <span class="badge bg-{% if solicitud.prioridad == 'Alta' %}danger{% elif solicitud.prioridad == 'Media' %}warning{% else %}info{% endif %}">
+                                {{ solicitud.prioridad }}
+                            </span>
+                        </p>
+                        <p class="mb-0"><small class="text-muted">Fecha de solicitud: {{ solicitud.fecha_solicitud.strftime('%d/%m/%Y %H:%M') }}</small></p>
+                    </div>
+                    <div class="card-footer">
+                        <a href="{{ url_for('ver_solicitud', id=solicitud.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Ver detalles
+                        </a>
+                        {% if solicitud.estado == 'Pendiente' %}
+                            <a href="{{ url_for('editar_solicitud', id=solicitud.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil"></i> Editar
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info text-center">
+        <h4>No tienes solicitudes registradas</h4>
+        <p>Crea tu primera solicitud para empezar el proceso de ayuda</p>
+        <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Crear Primera Solicitud
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

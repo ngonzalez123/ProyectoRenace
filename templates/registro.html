@@ -1,0 +1,71 @@
+<!-- templates/registro.html -->
+{% extends "base.html" %}
+
+{% block title %}Registro - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="mb-0">Registro de Usuario</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('registro') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cedula" class="form-label">Cédula de Ciudadanía</label>
+                            <input type="text" class="form-control" id="cedula" name="cedula" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="apellido" name="apellido" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="municipio" class="form-label">Municipio</label>
+                            <input type="text" class="form-control" id="municipio" name="municipio" value="Caucasia" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="direccion" class="form-label">Dirección</label>
+                        <input type="text" class="form-control" id="direccion" name="direccion" required>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                        <div class="form-text">La contraseña debe tener al menos 8 caracteres</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-person-plus"></i> Registrarse
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p class="mb-0">¿Ya tienes cuenta? <a href="{{ url_for('login') }}">Inicia sesión aquí</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

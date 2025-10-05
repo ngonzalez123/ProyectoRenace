@@ -1,0 +1,79 @@
+<!-- templates/nueva_solicitud.html -->
+{% extends "base.html" %}
+
+{% block title %}Nueva Solicitud - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Nueva Solicitud de Ayuda</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('nueva_solicitud') }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tipo_desastre" class="form-label">Tipo de Desastre</label>
+                            <select class="form-select" id="tipo_desastre" name="tipo_desastre" required>
+                                <option value="">Seleccione...</option>
+                                <option value="Inundación">Inundación</option>
+                                <option value="Deslizamiento">Deslizamiento de tierra</option>
+                                <option value="Terremoto">Terremoto</option>
+                                <option value="Vendaval">Vendaval</option>
+                                <option value="Incendio">Incendio</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_desastre" class="form-label">Fecha del Desastre</label>
+                            <input type="date" class="form-control" id="fecha_desastre" name="fecha_desastre" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="direccion_afectada" class="form-label">Dirección de la Propiedad Afectada</label>
+                        <input type="text" class="form-control" id="direccion_afectada" name="direccion_afectada" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="personas_afectadas" class="form-label">Número de Personas Afectadas</label>
+                            <input type="number" class="form-control" id="personas_afectadas" name="personas_afectadas" min="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="prioridad" class="form-label">Prioridad</label>
+                            <select class="form-select" id="prioridad" name="prioridad" required>
+                                <option value="Baja">Baja - Daños menores</option>
+                                <option value="Media" selected>Media - Daños moderados</option>
+                                <option value="Alta">Alta - Daños severos/Vivienda inhabitable</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="descripcion_danos" class="form-label">Descripción Detallada de los Daños</label>
+                        <textarea class="form-control" id="descripcion_danos" name="descripcion_danos" rows="5" required
+                                  placeholder="Por favor describa detalladamente los daños sufridos en su vivienda..."></textarea>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        <strong>Importante:</strong> Asegúrese de proporcionar información precisa y detallada. 
+                        Esta información será verificada por las autoridades competentes.
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Enviar Solicitud
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Solicitud #{{ solicitud.id }} - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Editar Solicitud #{{ solicitud.id }}</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('editar_solicitud', id=solicitud.id) }}">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="tipo_desastre" class="form-label">Tipo de Desastre</label>
+                            <select class="form-select" id="tipo_desastre" name="tipo_desastre" required>
+                                <option value="Inundación" {% if solicitud.tipo_desastre == 'Inundación' %}selected{% endif %}>Inundación</option>
+                                <option value="Deslizamiento" {% if solicitud.tipo_desastre == 'Deslizamiento' %}selected{% endif %}>Deslizamiento de tierra</option>
+                                <option value="Terremoto" {% if solicitud.tipo_desastre == 'Terremoto' %}selected{% endif %}>Terremoto</option>
+                                <option value="Vendaval" {% if solicitud.tipo_desastre == 'Vendaval' %}selected{% endif %}>Vendaval</option>
+                                <option value="Incendio" {% if solicitud.tipo_desastre == 'Incendio' %}selected{% endif %}>Incendio</option>
+                                <option value="Otro" {% if solicitud.tipo_desastre == 'Otro' %}selected{% endif %}>Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fecha_desastre" class="form-label">Fecha del Desastre</label>
+                            <input type="date" class="form-control" id="fecha_desastre" name="fecha_desastre" 
+                                   value="{{ solicitud.fecha_desastre.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="direccion_afectada" class="form-label">Dirección de la Propiedad Afectada</label>
+                        <input type="text" class="form-control" id="direccion_afectada" name="direccion_afectada" 
+                               value="{{ solicitud.direccion_afectada }}" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="personas_afectadas" class="form-label">Número de Personas Afectadas</label>
+                            <input type="number" class="form-control" id="personas_afectadas" name="personas_afectadas" 
+                                   value="{{ solicitud.personas_afectadas }}" min="1" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="prioridad" class="form-label">Prioridad</label>
+                            <select class="form-select" id="prioridad" name="prioridad" required>
+                                <option value="Baja" {% if solicitud.prioridad == 'Baja' %}selected{% endif %}>Baja - Daños menores</option>
+                                <option value="Media" {% if solicitud.prioridad == 'Media' %}selected{% endif %}>Media - Daños moderados</option>
+                                <option value="Alta" {% if solicitud.prioridad == 'Alta' %}selected{% endif %}>Alta - Daños severos/Vivienda inhabitable</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="descripcion_danos" class="form-label">Descripción Detallada de los Daños</label>
+                        <textarea class="form-control" id="descripcion_danos" name="descripcion_danos" rows="5" required>{{ solicitud.descripcion_danos }}</textarea>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('ver_solicitud', id=solicitud.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Guardar Cambios
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

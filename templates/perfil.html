@@ -1,0 +1,62 @@
+<!-- templates/perfil.html -->
+{% extends "base.html" %}
+
+{% block title %}Mi Perfil - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Mi Perfil</h3>
+            </div>
+            <div class="card-body p-4">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Cédula</h6>
+                        <p class="fw-bold">{{ usuario.cedula }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Correo Electrónico</h6>
+                        <p class="fw-bold">{{ usuario.email }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Nombre Completo</h6>
+                        <p class="fw-bold">{{ usuario.nombre }} {{ usuario.apellido }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Teléfono</h6>
+                        <p class="fw-bold">{{ usuario.telefono }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6 class="text-muted">Dirección</h6>
+                        <p class="fw-bold">{{ usuario.direccion }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted">Municipio</h6>
+                        <p class="fw-bold">{{ usuario.municipio }}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Fecha de Registro</h6>
+                    <p class="fw-bold">{{ usuario.fecha_registro.strftime('%d de %B de %Y') }}</p>
+                </div>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <h5>Estadísticas</h5>
+                    <p>Total de solicitudes: <strong>{{ usuario.solicitudes|length }}</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

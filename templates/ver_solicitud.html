@@ -1,0 +1,115 @@
+<!-- templates/ver_solicitud.html -->
+{% extends "base.html" %}
+
+{% block title %}Solicitud #{{ solicitud.id }} - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">Detalles de la Solicitud #{{ solicitud.id }}</h3>
+                <span class="estado-badge estado-{{ solicitud.estado.lower() }}">
+                    {{ solicitud.estado }}
+                </span>
+            </div>
+            <div class="card-body p-4">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Tipo de Desastre</h6>
+                        <p class="fw-bold">{{ solicitud.tipo_desastre }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Fecha del Desastre</h6>
+                        <p class="fw-bold">{{ solicitud.fecha_desastre.strftime('%d de %B de %Y') }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h6 class="text-muted">Dirección Afectada</h6>
+                        <p class="fw-bold">{{ solicitud.direccion_afectada }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <h6 class="text-muted">Personas Afectadas</h6>
+                        <p class="fw-bold">{{ solicitud.personas_afectadas }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Prioridad</h6>
+                        <p>
+                            <span class="badge bg-{% if solicitud.prioridad == 'Alta' %}danger{% elif solicitud.prioridad == 'Media' %}warning{% else %}info{% endif %}">
+                                {{ solicitud.prioridad }}
+                            </span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted">Fecha de Solicitud</h6>
+                        <p class="fw-bold">{{ solicitud.fecha_solicitud.strftime('%d/%m/%Y %H:%M') }}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="text-muted">Descripción de los Daños</h6>
+                    <div class="border rounded p-3 bg-light">
+                        {{ solicitud.descripcion_danos }}
+                    </div>
+                </div>
+                
+                {% if solicitud.observaciones %}
+                <div class="mb-3">
+                    <h6 class="text-muted">Observaciones del Estado</h6>
+                    <div class="border rounded p-3 bg-light">
+                        {{ solicitud.observaciones }}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="text-muted small">
+                    <p class="mb-0">Última actualización: {{ solicitud.fecha_actualizacion.strftime('%d/%m/%Y %H:%M') }}</p>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                </a>
+                {% if solicitud.estado == 'Pendiente' %}
+                    <a href="{{ url_for('editar_solicitud', id=solicitud.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <button type="button" class="btn btn-danger" onclick="confirmarEliminacion({{ solicitud.id }})">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarEliminacion(id) {
+    if (confirm('¿Estás seguro de que deseas eliminar esta solicitud? Esta acción no se puede deshacer.')) {
+        fetch(`/eliminar_solicitud/${id}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                window.location.href = "{{ url_for('dashboard') }}";
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Error al eliminar la solicitud');
+        });
+    }
+}
+</script>
+{% endblock %}

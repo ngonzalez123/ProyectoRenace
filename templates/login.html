@@ -1,0 +1,37 @@
+<!-- templates/login.html -->
+{% extends "base.html" %}
+
+{% block title %}Iniciar Sesión - RENACEHOGARES{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white text-center">
+                <h3 class="mb-0">Iniciar Sesión</h3>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="cedula" class="form-label">Cédula de Ciudadanía</label>
+                        <input type="text" class="form-control" id="cedula" name="cedula" required autofocus>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="password" class="form-label">Contraseña</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
+                    </button>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p class="mb-0">¿No tienes cuenta? <a href="{{ url_for('registro') }}">Regístrate aquí</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
