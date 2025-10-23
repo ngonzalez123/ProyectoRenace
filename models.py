@@ -75,8 +75,6 @@ class SolicitudAyuda(db.Model):
     __tablename__ = 'solicitudes_ayuda'
 
     id_solicitud = db.Column(db.Integer, primary_key=True)
-    
-    # Clave Foránea: referencia a la tabla 'usuarios'
     id_usuario = db.Column(db.Integer, db.ForeignKey('usuarios.id_usuario'), nullable=False)
     tipo_desastre = db.Column(db.String(100), nullable=False)
     fecha_desastre = db.Column(db.Date, nullable=False)
@@ -84,10 +82,8 @@ class SolicitudAyuda(db.Model):
     prioridad = db.Column(db.String(50))
     descripcion = db.Column(db.Text, nullable=False)
     ubicacion = db.Column(db.String(255), nullable=True)
-    fecha_solicitud = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    # Usamos la clase Enum de Python para mapear correctamente
-    estado = db.Column(db.Enum(EstadoSolicitud), default=EstadoSolicitud.PENDIENTE) 
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)  # ✅ AÑADE ESTA LÍNEA
+    estado = db.Column(db.Enum(EstadoSolicitud), default=EstadoSolicitud.PENDIENTE)
 
 
 class TicketSoporte(db.Model):

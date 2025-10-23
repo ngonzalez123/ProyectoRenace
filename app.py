@@ -61,14 +61,14 @@ def is_soporte(usuario):
 # ESTO SOLUCIONA EL ERROR: 'current_user' is undefined
 # Asegúrate de que este bloque se coloque DESPUÉS de la inicialización de 'app'
 # =================================================================
-@app.context_processor
-def inject_global_variables():
-    """Inyecta la variable 'current_user' en el contexto de Jinja para todas las plantillas."""
-    user = get_current_user()
+# @app.context_processor
+# def inject_global_variables():
+#     """Inyecta la variable 'current_user' en el contexto de Jinja para todas las plantillas."""
+#     user = get_current_user()
     
-    # Devuelve un diccionario donde la clave es el nombre de la variable en Jinja
-    # y el valor es el objeto Usuario.
-    return dict(current_user=user)
+#     # Devuelve un diccionario donde la clave es el nombre de la variable en Jinja
+#     # y el valor es el objeto Usuario.
+#     return dict(current_user=user)
 
 
 #   RUTAS PRINCIPALES (index, registro, login, logout, perfil)
@@ -146,28 +146,28 @@ def login():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    solicitudes_query = SolicitudAyuda.query.filter_by(
-        id_usuario=current_user.id_usuario
-    ).order_by(SolicitudAyuda.id_solicitud.desc()).all()
+    # Flask-Login ya sabe quién está autenticado → current_user
+    solicitudes_query = SolicitudAyuda.query.filter_by(id_usuario=current_user.id_usuario).order_by(SolicitudAyuda.id_solicitud.desc()).all()
 
     solicitudes_para_html = []
     for sol in solicitudes_query:
         solicitudes_para_html.append({
-            'id': sol.id_solicitud,
-            'tipo_desastre': sol.tipo_desastre,
-            'fecha_desastre': sol.fecha_desastre,
-            'estado': sol.estado.name.capitalize().replace('_', ' '),
-            'direccion_afectada': sol.ubicacion,
-            'prioridad': sol.prioridad,
-            'fecha_solicitud': sol.fecha_solicitud if hasattr(sol, 'fecha_solicitud') else datetime.now()
+            "id": sol.id_solicitud,
+            "tipo_desastre": sol.tipo_desastre,
+            "fecha_desastre": sol.fecha_desastre,
+            "direccion_afectada": sol.ubicacion,
+            "personas_afectadas": sol.personas_afectadas,
+            "prioridad": sol.prioridad,
+            "descripcion_danos": sol.descripcion,
+            "estado": sol.estado.name.capitalize().replace('_', ' '),
+            "fecha_solicitud": getattr(sol, "fecha_creacion", datetime.now())
         })
 
     return render_template(
         "dashboard.html",
-        nombre=current_user.nombre,
+        nombre=current_user.nombre,  # Usamos Flask-Login, no la sesión manual
         solicitudes=solicitudes_para_html
     )
-
 # ======================
 #   VER SOLICITUD
 # ======================
