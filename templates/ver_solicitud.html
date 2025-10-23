@@ -1,115 +1,111 @@
-<!-- templates/ver_solicitud.html -->
 {% extends "base.html" %}
 
-{% block title %}Solicitud #{{ solicitud.id }} - RENACEHOGARES{% endblock %}
+{% block title %}Detalles de Solicitud #{{ solicitud.id }} - RENACEHOGARES{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="col-lg-10">
+        <div class="card shadow-lg">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">Detalles de la Solicitud #{{ solicitud.id }}</h3>
-                <span class="estado-badge estado-{{ solicitud.estado.lower() }}">
+                <span class="estado-badge 
+                    estado-{{ solicitud.estado.lower() | replace(' ', '_') | replace('ó', 'o') }}"
+                >
                     {{ solicitud.estado }}
                 </span>
             </div>
-            <div class="card-body p-4">
-                <div class="row mb-3">
+            <div class="card-body p-5">
+                
+                <h4 class="mb-4 text-primary"><i class="bi bi-info-circle me-2"></i> Información Básica</h4>
+                
+                <div class="row mb-4">
                     <div class="col-md-6">
-                        <h6 class="text-muted">Tipo de Desastre</h6>
-                        <p class="fw-bold">{{ solicitud.tipo_desastre }}</p>
+                        <p class="mb-1"><strong>Tipo de Desastre:</strong></p>
+                        <p class="fs-5">{{ solicitud.tipo_desastre }}</p>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="text-muted">Fecha del Desastre</h6>
-                        <p class="fw-bold">{{ solicitud.fecha_desastre.strftime('%d de %B de %Y') }}</p>
+                        <p class="mb-1"><strong>Fecha del Desastre:</strong></p>
+                        <p class="fs-5">{{ solicitud.fecha_desastre.strftime('%d/%m/%Y') }}</p>
                     </div>
                 </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <h6 class="text-muted">Dirección Afectada</h6>
-                        <p class="fw-bold">{{ solicitud.direccion_afectada }}</p>
-                    </div>
-                    <div class="col-md-4">
-                        <h6 class="text-muted">Personas Afectadas</h6>
-                        <p class="fw-bold">{{ solicitud.personas_afectadas }}</p>
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
+
+                <div class="row mb-4">
                     <div class="col-md-6">
-                        <h6 class="text-muted">Prioridad</h6>
-                        <p>
-                            <span class="badge bg-{% if solicitud.prioridad == 'Alta' %}danger{% elif solicitud.prioridad == 'Media' %}warning{% else %}info{% endif %}">
+                        <p class="mb-1"><strong>Prioridad Asignada:</strong></p>
+                        <p class="fs-5">
+                            <span class="badge bg-{% if solicitud.prioridad == 'Alta' %}danger{% elif solicitud.prioridad == 'Media' %}warning{% else %}info{% endif %} p-2">
                                 {{ solicitud.prioridad }}
                             </span>
                         </p>
                     </div>
                     <div class="col-md-6">
-                        <h6 class="text-muted">Fecha de Solicitud</h6>
-                        <p class="fw-bold">{{ solicitud.fecha_solicitud.strftime('%d/%m/%Y %H:%M') }}</p>
+                        <p class="mb-1"><strong>Personas Afectadas:</strong></p>
+                        <p class="fs-5">{{ solicitud.personas_afectadas }}</p>
                     </div>
+                </div>
+
+                <hr class="my-4">
+                
+                <h4 class="mb-3 text-primary"><i class="bi bi-geo-alt-fill me-2"></i> Ubicación y Daños</h4>
+
+                <p class="mb-1"><strong>Dirección Afectada:</strong></p>
+                <p class="fs-5">{{ solicitud.ubicacion }}</p>
+                
+                <p class="mb-1 mt-3"><strong>Descripción Detallada de los Daños:</strong></p>
+                <div class="alert alert-light border p-3">
+                    <p class="mb-0 text-break">{{ solicitud.descripcion }}</p>
                 </div>
                 
-                <div class="mb-3">
-                    <h6 class="text-muted">Descripción de los Daños</h6>
-                    <div class="border rounded p-3 bg-light">
-                        {{ solicitud.descripcion_danos }}
-                    </div>
-                </div>
-                
-                {% if solicitud.observaciones %}
-                <div class="mb-3">
-                    <h6 class="text-muted">Observaciones del Estado</h6>
-                    <div class="border rounded p-3 bg-light">
-                        {{ solicitud.observaciones }}
-                    </div>
-                </div>
+                {% if solicitud.evidencia %}
+                <p class="mb-1 mt-3"><strong>Evidencia Adjunta:</strong></p>
+                <p class="fs-5"><a href="{{ solicitud.evidencia }}" target="_blank"><i class="bi bi-file-earmark-image"></i> Ver archivo</a></p>
                 {% endif %}
-                
-                <div class="text-muted small">
-                    <p class="mb-0">Última actualización: {{ solicitud.fecha_actualizacion.strftime('%d/%m/%Y %H:%M') }}</p>
-                </div>
+
             </div>
-            <div class="card-footer">
+            <div class="card-footer d-flex justify-content-between">
                 <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Volver al Dashboard
                 </a>
-                {% if solicitud.estado == 'Pendiente' %}
-                    <a href="{{ url_for('editar_solicitud', id=solicitud.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil"></i> Editar
+                
+                {% if solicitud.estado.lower() == 'pendiente' %}
+                <div>
+                    <a href="{{ url_for('editar_solicitud', id=solicitud.id) }}" class="btn btn-warning me-2">
+                        <i class="bi bi-pencil"></i> Modificar Solicitud
                     </a>
-                    <button type="button" class="btn btn-danger" onclick="confirmarEliminacion({{ solicitud.id }})">
-                        <i class="bi bi-trash"></i> Eliminar
+                    
+                    <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal">
+                        <i class="bi bi-trash"></i> Eliminar Solicitud
                     </button>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<script>
-function confirmarEliminacion(id) {
-    if (confirm('¿Estás seguro de que deseas eliminar esta solicitud? Esta acción no se puede deshacer.')) {
-        fetch(`/eliminar_solicitud/${id}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                window.location.href = "{{ url_for('dashboard') }}";
-            } else {
-                alert('Error: ' + data.message);
-            }
-        })
-        .catch(error => {
-            alert('Error al eliminar la solicitud');
-        });
-    }
-}
-</script>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmDeleteModalLabel"><i class="bi bi-exclamation-triangle-fill"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <!-- CORREGIDO: Usando solicitud.id -->
+                <p>¿Estás seguro de que deseas eliminar la Solicitud #{{ solicitud.id }}?</p> 
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                
+                <!-- CORREGIDO: Usando solicitud.id en la acción de Flask -->
+                <form action="{{ url_for('eliminar_solicitud', id_solicitud=solicitud.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger">Eliminar Definitivamente</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

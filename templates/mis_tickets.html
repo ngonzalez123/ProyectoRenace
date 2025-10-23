@@ -1,0 +1,59 @@
+    {% extends "base.html" %}
+
+    {% block title %}Mis Tickets de Soporte - RENACEHOGARES{% endblock %}
+
+    {% block content %}
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4 border-bottom pb-2">
+                    <i class="bi bi-ticket-detailed-fill me-2"></i> Mis Tickets de Soporte
+                </h2>
+                
+                <!-- Botón para crear un nuevo ticket -->
+                <div class="d-flex justify-content-end mb-4">
+                    <a href="{{ url_for('crear_ticket') }}" class="btn btn-primary btn-lg shadow-sm">
+                        <i class="bi bi-plus-circle me-2"></i> Crear Nuevo Ticket
+                    </a>
+                </div>
+
+                {% if tickets %}
+                    <div class="list-group shadow-lg rounded-3">
+                        {% for ticket in tickets %}
+                            <!-- Enlace que lleva a la vista de detalle: ver_tickets.html -->
+                            <a href="{{ url_for('ver_ticket', id_ticket=ticket.id_ticket) }}" class="list-group-item list-group-item-action py-3">
+                                <div class="d-flex w-100 justify-content-between align-items-center">
+                                    <!-- CORREGIDO: Usando 'asunto' y 'creador_nombre' que son pasados desde app.py -->
+                                    <h5 class="mb-1 text-dark fw-bold">Ticket #{{ ticket.id_ticket }} - {{ ticket.asunto }}</h5>
+                                    <small class="text-muted text-end">{{ ticket.fecha_apertura }}</small>
+                                </div>
+                                <div class="d-flex w-100 justify-content-start align-items-center mt-2">
+                                    <!-- CORREGIDO: Usando 'estado' que es pasado desde app.py -->
+                                    <span class="badge rounded-pill me-2 p-2 
+                                        {% if 'Abierto' in ticket.estado %}bg-danger
+                                        {% elif 'Cerrado' in ticket.estado %}bg-success
+                                        {% elif 'Pendiente' in ticket.estado %}bg-warning text-dark
+                                        {% else %}bg-info{% endif %}"
+                                    >
+                                        {{ ticket.estado }}
+                                    </span>
+                                    <!-- Nombre del creador visible (importante si el usuario actual es de Soporte) -->
+                                    <span class="badge rounded-pill bg-secondary p-2">Creado por: {{ ticket.creador_nombre }}</span>
+                                </div>
+                                
+                                <!-- Se simplifica la sección de respuestas para evitar errores de variables faltantes -->
+                                <small class="text-truncate d-block text-gray-600 mt-2">Haz clic para ver el hilo de conversación completo y responder.</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info text-center p-5 rounded-lg shadow-sm">
+                        <h4><i class="bi bi-ticket me-2"></i> No tienes tickets de soporte activos.</h4>
+                        <p class="mb-0">Si necesitas ayuda con alguna de tus solicitudes, por favor, abre un nuevo ticket.</p>
+                        <a href="{{ url_for('crear_ticket') }}" class="btn btn-primary mt-3">Crear Nuevo Ticket</a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endblock %}
