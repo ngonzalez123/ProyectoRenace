@@ -33,7 +33,7 @@
                     <div class="mb-3">
                         <label for="direccion_afectada" class="form-label">Dirección de la Propiedad Afectada</label>
                         <input type="text" class="form-control" id="direccion_afectada" name="direccion_afectada" 
-                               value="{{ solicitud.direccion_afectada }}" required>
+                               value="{{ solicitud.ubicacion }}" required>
                     </div>
                     
                     <div class="row">
@@ -54,7 +54,7 @@
                     
                     <div class="mb-4">
                         <label for="descripcion_danos" class="form-label">Descripción Detallada de los Daños</label>
-                        <textarea class="form-control" id="descripcion_danos" name="descripcion_danos" rows="5" required>{{ solicitud.descripcion_danos }}</textarea>
+                        <textarea class="form-control" id="descripcion_danos" name="descripcion_danos" rows="5" required>{{ solicitud.descripcion }}</textarea>
                     </div>
                     
                     <div class="d-flex justify-content-between">

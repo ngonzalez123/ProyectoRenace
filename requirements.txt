@@ -3,3 +3,4 @@ Flask-SQLAlchemy
 mysqlclient # O el conector que estés usando para MySQL
 Werkzeug
 python-dotenv # Si estás usando variables de entorno
+pip install Flask-Migrate

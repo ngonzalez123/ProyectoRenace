@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <h2 class="mb-4 text-center">Crear Ticket de Soporte</h2>
+
+            <!-- Bloque de Mensajes Flash de Flask -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="mb-4">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category|replace('danger', 'danger')|replace('success', 'success')|replace('warning', 'warning') }}" role="alert">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- El formulario ahora especifica la acción -->
+            <form method="POST" action="{{ url_for('crear_ticket') }}" class="card p-4 shadow">
+                <div class="mb-3">
+                    <label for="asunto" class="form-label">Asunto *</label>
+                    <input type="text" name="asunto" id="asunto" class="form-control" placeholder="Ej: Error al iniciar sesión" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="descripcion" class="form-label">Descripción del problema *</label>
+                    <textarea name="descripcion" id="descripcion" rows="4" class="form-control" placeholder="Describe tu problema con el mayor detalle posible." required></textarea>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg">Enviar Ticket</button>
+                    <a href="{{ url_for('mis_tickets') }}" class="btn btn-outline-secondary">Cancelar y Volver a Mis Tickets</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

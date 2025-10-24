@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.id_ticket }} - {{ ticket.asunto }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            
+            <a href="{{ url_for('mis_tickets', tab='tickets') }}" class="btn btn-outline-secondary mb-3">
+                <i class="bi bi-arrow-left"></i> Volver a Mis Tickets
+            </a>
+
+            <!-- Encabezado del Ticket -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center bg-primary text-white">
+                    <h3 class="mb-0">Ticket de Soporte #{{ ticket.id_ticket }}</h3>
+                    <span class="badge fs-6 p-2 
+                        {% if 'ABIERTO' in ticket.estado.name|upper %}bg-danger
+                        {% elif 'PROCESO' in ticket.estado.name|upper %}bg-warning text-dark
+                        {% elif 'CERRADO' in ticket.estado.name|upper %}bg-success
+                        {% else %}bg-info{% endif %}"
+                    >
+                        {{ ticket.estado.value }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title text-dark">{{ ticket.asunto }}</h4>
+                    <p class="text-muted mb-3">
+                        Abierto por: <strong>{{ ticket.creador_ticket.nombre_completo }}</strong> el {{ ticket.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}
+                    </p>
+                    <hr>
+                    <p>{{ ticket.descripcion }}</p>
+
+                    <!-- Botones de Acción (Solo para ADMIN y SOPORTE) -->
+                    {% if current_user.rol.name in ['ADMIN', 'SOPORTE'] %}
+                        <div class="mt-4 text-end">
+                            {% if ticket.estado.name == 'ABIERTO' or ticket.estado.name == 'EN_PROCESO' %}
+                                <!-- Botón para CERRAR -->
+                                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmCloseModal">
+                                    <i class="bi bi-lock-fill"></i> Cerrar Ticket
+                                </button>
+                            {% elif ticket.estado.name == 'CERRADO' %}
+                                <!-- Botón para REABRIR -->
+                                <button type="button" class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#confirmReopenModal">
+                                    <i class="bi bi-unlock-fill"></i> Reabrir Ticket
+                                </button>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Hilo de Respuestas/Conversación -->
+            <h4 class="mb-3 text-primary"><i class="bi bi-chat-dots me-2"></i> Conversación</h4>
+            
+            {% if ticket.respuestas %}
+                <div class="list-group">
+                    {% for respuesta in ticket.respuestas | sort(attribute='fecha') %}
+                        <!-- Estilos dinámicos para diferenciar respuestas -->
+                        {% set es_creador = respuesta.id_usuario == ticket.id_usuario %}
+                        {% set estilo_clase = 'list-group-item-info' if not es_creador and respuesta.usuario and respuesta.usuario.rol.name == 'SOPORTE' else 'list-group-item-light' %}
+                        {% set alineacion = 'text-start' if not es_creador and respuesta.usuario and respuesta.usuario.rol.name == 'SOPORTE' else 'text-end' %}
+
+                        <!-- Verificamos si respuesta.usuario existe -->
+                        {% if respuesta.usuario %}
+                            {% set nombre_usuario = respuesta.usuario.nombre_completo %}
+                            {% set rol_usuario = respuesta.usuario.rol.value if respuesta.usuario.rol else 'Usuario' %}
+                        {% else %}
+                            {% set nombre_usuario = 'Usuario ID: ' + respuesta.id_usuario|string %}
+                            {% set rol_usuario = 'No Definido' %}
+                        {% endif %}
+
+                        <div class="list-group-item {{ estilo_clase }} p-3 mb-2 rounded-3 border-secondary">
+                            <div class="d-flex w-100 justify-content-between {{ alineacion }}">
+                                <small class="text-muted">{{ respuesta.fecha.strftime('%d/%m/%Y %H:%M') }}</small>
+                                <strong>{{ nombre_usuario }} 
+                                    <span class="badge bg-secondary">{{ rol_usuario }}</span>
+                                </strong>
+                            </div>
+                            <p class="mb-1 mt-2 {{ alineacion }}">{{ respuesta.mensaje }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-warning text-center">Aún no hay respuestas para este ticket.</div>
+            {% endif %}
+
+
+            <!-- Formulario de Respuesta (Solo si el ticket NO está cerrado Y el usuario es ADMIN o SOPORTE) -->
+            {% if ticket.estado.name != 'CERRADO' and current_user.rol.name in ['ADMIN', 'SOPORTE'] %}
+            <div class="card shadow mt-4 p-4">
+                <h5 class="text-primary mb-3"><i class="bi bi-reply-fill me-2"></i> Escribir Respuesta</h5>
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.mensaje(class="form-control", rows="4", placeholder="Escribe tu respuesta...") }}
+                        {% for error in form.mensaje.errors %}
+                            <span class="text-danger">{{ error }}</span>
+                        {% endfor %}
+                    </div>
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+            {% elif ticket.estado.name == 'CERRADO' %}
+            <div class="alert alert-success text-center mt-4">
+                <i class="bi bi-check-circle-fill me-2"></i> Este ticket ha sido cerrado. 
+                {% if current_user.rol.name in ['ADMIN', 'SOPORTE'] %}
+                    Reábrelo para responder.
+                {% else %}
+                    Solo ADMIN o SOPORTE pueden reabrirlo.
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center mt-4">
+                <i class="bi bi-info-circle-fill me-2"></i> Solo el personal de ADMIN y SOPORTE puede responder tickets.
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Cierre -->
+<div class="modal fade" id="confirmCloseModal" tabindex="-1" aria-labelledby="confirmCloseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="confirmCloseModalLabel">Confirmar Cierre de Ticket</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas <strong>CERRAR</strong> el Ticket #{{ ticket.id_ticket }}?</p>
+                <p class="text-danger">Una vez cerrado, solo se podrá responder si se reabre.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ url_for('cerrar_ticket', id_ticket=ticket.id_ticket) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-lock-fill"></i> Sí, Cerrar Ticket
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación de Reapertura -->
+<div class="modal fade" id="confirmReopenModal" tabindex="-1" aria-labelledby="confirmReopenModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="confirmReopenModalLabel">Confirmar Reapertura de Ticket</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas <strong>REABRIR</strong> el Ticket #{{ ticket.id_ticket }}?</p>
+                <p class="text-warning">El estado cambiará a "ABIERTO" y se permitirá responder de nuevo.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form action="{{ url_for('reabrir_ticket', id_ticket=ticket.id_ticket) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-unlock-fill"></i> Sí, Reabrir Ticket
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

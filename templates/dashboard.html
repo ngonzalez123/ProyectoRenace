@@ -1,12 +1,18 @@
 <!-- templates/dashboard.html -->
 {% extends "base.html" %}
 
-{% block title %}Dashboard - RENACEHOGARES{% endblock %}
+{% block title %}Mis Solicitudes - RENACEHOGARES{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h2>Mis Solicitudes</h2>
+        <h2>
+            {% if current_user.rol.name == 'ADMIN' %}
+                Todas las Solicitudes
+            {% else %}
+                Mis Solicitudes
+            {% endif %}
+        </h2>
     </div>
     <div class="col-auto">
         <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary">
@@ -27,6 +33,14 @@
                         </span>
                     </div>
                     <div class="card-body">
+                        <!-- Mostrar creador solo para ADMIN -->
+                        {% if current_user.rol.name == 'ADMIN' %}
+                            <p class="mb-2">
+                                <strong>Creado por:</strong> 
+                                <span class="badge bg-secondary">{{ solicitud.creador_nombre }}</span>
+                            </p>
+                        {% endif %}
+                        
                         <p class="mb-2"><strong>Tipo de desastre:</strong> {{ solicitud.tipo_desastre }}</p>
                         <p class="mb-2"><strong>Fecha del desastre:</strong> {{ solicitud.fecha_desastre.strftime('%d/%m/%Y') }}</p>
                         <p class="mb-2"><strong>Dirección afectada:</strong> {{ solicitud.direccion_afectada }}</p>
@@ -53,11 +67,25 @@
     </div>
 {% else %}
     <div class="alert alert-info text-center">
-        <h4>No tienes solicitudes registradas</h4>
-        <p>Crea tu primera solicitud para empezar el proceso de ayuda</p>
-        <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Crear Primera Solicitud
-        </a>
+        <h4>
+            {% if current_user.rol.name == 'ADMIN' %}
+                No hay solicitudes registradas en el sistema
+            {% else %}
+                No tienes solicitudes registradas
+            {% endif %}
+        </h4>
+        <p>
+            {% if current_user.rol.name == 'ADMIN' %}
+                Cuando los usuarios creen solicitudes, aparecerán aquí
+            {% else %}
+                Crea tu primera solicitud para empezar el proceso de ayuda
+            {% endif %}
+        </p>
+        {% if current_user.rol.name != 'ADMIN' %}
+            <a href="{{ url_for('nueva_solicitud') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Crear Primera Solicitud
+            </a>
+        {% endif %}
     </div>
 {% endif %}
 {% endblock %}
