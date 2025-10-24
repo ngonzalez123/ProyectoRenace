@@ -24,8 +24,12 @@
                         <p class="fs-5">{{ solicitud.tipo_desastre }}</p>
                     </div>
                     <div class="col-md-6">
-                        <p class="mb-1"><strong>Fecha del Desastre:</strong></p>
-                        <p class="fs-5">{{ solicitud.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</p>
+                        <p class="mb-1"><strong>Fecha del Desastre:</stro   ng></p>
+                        {% if solicitud.fecha_creacion %}
+                            <p class="fs-5">{{ solicitud.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</p>
+                        {% else %}
+                            <p class="fs-5"><small class="text-muted">Fecha no disponible</small></p>
+                        {% endif %}
                     </div>
                 </div>
 

@@ -7,7 +7,7 @@
     <div class="row justify-content-center">
         <div class="col-lg-10">
             
-            <a href="{{ url_for('dashboard', tab='tickets') }}" class="btn btn-outline-secondary mb-3">
+            <a href="{{ url_for('mis_tickets', tab='tickets') }}" class="btn btn-outline-secondary mb-3">
                 <i class="bi bi-arrow-left"></i> Volver a Mis Tickets
             </a>
 
@@ -32,17 +32,16 @@
                     <hr>
                     <p>{{ ticket.descripcion }}</p>
 
-                    <!-- Botones de Acción (Cerrar/Reabrir Ticket) -->
-                    {% if current_user.id_usuario == ticket.id_usuario or es_admin %}
-                        <!-- Lógica de Cierre/Reapertura -->
+                    <!-- Botones de Acción (Solo para ADMIN y SOPORTE) -->
+                    {% if current_user.rol.name in ['ADMIN', 'SOPORTE'] %}
                         <div class="mt-4 text-end">
                             {% if ticket.estado.name == 'ABIERTO' or ticket.estado.name == 'EN_PROCESO' %}
-                                <!-- Botón para CERRAR (requiere ruta 'cerrar_ticket' en Flask) -->
+                                <!-- Botón para CERRAR -->
                                 <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmCloseModal">
                                     <i class="bi bi-lock-fill"></i> Cerrar Ticket
                                 </button>
                             {% elif ticket.estado.name == 'CERRADO' %}
-                                <!-- Botón para REABRIR (requiere ruta 'reabrir_ticket' en Flask) -->
+                                <!-- Botón para REABRIR -->
                                 <button type="button" class="btn btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#confirmReopenModal">
                                     <i class="bi bi-unlock-fill"></i> Reabrir Ticket
                                 </button>
@@ -63,12 +62,11 @@
                         {% set estilo_clase = 'list-group-item-info' if not es_creador and respuesta.usuario and respuesta.usuario.rol.name == 'SOPORTE' else 'list-group-item-light' %}
                         {% set alineacion = 'text-start' if not es_creador and respuesta.usuario and respuesta.usuario.rol.name == 'SOPORTE' else 'text-end' %}
 
-                        <!-- CORRECCIÓN DE ERROR: Verificamos si respuesta.usuario existe antes de acceder a sus atributos -->
+                        <!-- Verificamos si respuesta.usuario existe -->
                         {% if respuesta.usuario %}
                             {% set nombre_usuario = respuesta.usuario.nombre_completo %}
                             {% set rol_usuario = respuesta.usuario.rol.value if respuesta.usuario.rol else 'Usuario' %}
                         {% else %}
-                            <!-- Fallback si la relación no fue cargada -->
                             {% set nombre_usuario = 'Usuario ID: ' + respuesta.id_usuario|string %}
                             {% set rol_usuario = 'No Definido' %}
                         {% endif %}
@@ -89,14 +87,13 @@
             {% endif %}
 
 
-            <!-- Formulario de Respuesta (Solo si el ticket no está cerrado) -->
-            {% if ticket.estado.name != 'CERRADO' %}
+            <!-- Formulario de Respuesta (Solo si el ticket NO está cerrado Y el usuario es ADMIN o SOPORTE) -->
+            {% if ticket.estado.name != 'CERRADO' and current_user.rol.name in ['ADMIN', 'SOPORTE'] %}
             <div class="card shadow mt-4 p-4">
                 <h5 class="text-primary mb-3"><i class="bi bi-reply-fill me-2"></i> Escribir Respuesta</h5>
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     <div class="mb-3">
-                        <!-- Usamos directamente el campo 'mensaje' del formulario pasado por Flask -->
                         {{ form.mensaje(class="form-control", rows="4", placeholder="Escribe tu respuesta...") }}
                         {% for error in form.mensaje.errors %}
                             <span class="text-danger">{{ error }}</span>
@@ -107,9 +104,18 @@
                     </div>
                 </form>
             </div>
-            {% else %}
+            {% elif ticket.estado.name == 'CERRADO' %}
             <div class="alert alert-success text-center mt-4">
-                <i class="bi bi-check-circle-fill me-2"></i> Este ticket ha sido cerrado. Reábrelo para responder.
+                <i class="bi bi-check-circle-fill me-2"></i> Este ticket ha sido cerrado. 
+                {% if current_user.rol.name in ['ADMIN', 'SOPORTE'] %}
+                    Reábrelo para responder.
+                {% else %}
+                    Solo ADMIN o SOPORTE pueden reabrirlo.
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="alert alert-info text-center mt-4">
+                <i class="bi bi-info-circle-fill me-2"></i> Solo el personal de ADMIN y SOPORTE puede responder tickets.
             </div>
             {% endif %}
             
@@ -117,7 +123,7 @@
     </div>
 </div>
 
-<!-- Modal de Confirmación de Cierre (Requiere la ruta 'cerrar_ticket') -->
+<!-- Modal de Confirmación de Cierre -->
 <div class="modal fade" id="confirmCloseModal" tabindex="-1" aria-labelledby="confirmCloseModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -126,20 +132,22 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro de que deseas **CERRAR** el Ticket #{{ ticket.id_ticket }}?</p>
+                <p>¿Estás seguro de que deseas <strong>CERRAR</strong> el Ticket #{{ ticket.id_ticket }}?</p>
                 <p class="text-danger">Una vez cerrado, solo se podrá responder si se reabre.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form action="{{ url_for('cerrar_ticket', id_ticket=ticket.id_ticket) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-danger">Sí, Cerrar Ticket</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-lock-fill"></i> Sí, Cerrar Ticket
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Modal de Confirmación de Reapertura (Requiere la ruta 'reabrir_ticket') -->
+<!-- Modal de Confirmación de Reapertura -->
 <div class="modal fade" id="confirmReopenModal" tabindex="-1" aria-labelledby="confirmReopenModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -148,13 +156,15 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
             <div class="modal-body">
-                <p>¿Estás seguro de que deseas **REABRIR** el Ticket #{{ ticket.id_ticket }}?</p>
-                <p class="text-warning">El estado cambiará a "EN PROCESO" y se permitirá responder de nuevo.</p>
+                <p>¿Estás seguro de que deseas <strong>REABRIR</strong> el Ticket #{{ ticket.id_ticket }}?</p>
+                <p class="text-warning">El estado cambiará a "ABIERTO" y se permitirá responder de nuevo.</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form action="{{ url_for('reabrir_ticket', id_ticket=ticket.id_ticket) }}" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-warning text-dark">Sí, Reabrir Ticket</button>
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-unlock-fill"></i> Sí, Reabrir Ticket
+                    </button>
                 </form>
             </div>
         </div>

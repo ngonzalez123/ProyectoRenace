@@ -95,21 +95,26 @@ class TicketSoporte(db.Model):
     descripcion = db.Column(db.Text, nullable=False)
     
     # Clave foránea correcta a 'solicitudes_ayuda'
-    id_solicitud = db.Column(db.Integer, db.ForeignKey('solicitudes_ayuda.id_solicitud'), nullable=True) 
+    id_solicitud = db.Column(db.Integer, db.ForeignKey('solicitudes_ayuda.id_solicitud'), nullable=True)
     
-    # Apuntamos al nombre de la clase de modelo 'SolicitudAyuda'
+    # Relación con la solicitud de ayuda
     solicitud_origen = db.relationship('SolicitudAyuda', backref='tickets_soporte_asociados')
     
-    # Usamos la clase Enum de Python
-    estado = db.Column(db.Enum(EstadoTicket), default=EstadoTicket.ABIERTO) 
+    # Estado del ticket
+    estado = db.Column(db.Enum(EstadoTicket), default=EstadoTicket.ABIERTO)
     
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relación con las respuestas (comentarios)
     respuestas = db.relationship('Respuesta', backref='ticket_asociado', lazy=True)
     
+    # 🔹 Relación con el usuario creador del ticket
+    creador = db.relationship('Usuario', backref='tickets_soporte', foreign_keys=[id_usuario])
+
     def __repr__(self):
         return f"<TicketSoporte {self.id_ticket} - {self.asunto}>"
+
+
 
 class Respuesta(db.Model):
     __tablename__ = 'respuestas'

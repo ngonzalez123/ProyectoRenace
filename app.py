@@ -1,10 +1,12 @@
+#RenaceHogaresVfinal
 from flask import Flask, render_template, request, redirect, url_for, session, flash, abort
 from flask_login import login_user, logout_user, login_required, current_user, LoginManager
 from flask_migrate import Migrate
 from sqlalchemy import and_, func
 from flask_bcrypt import Bcrypt  #  Importa Flask-Bcrypt aquí
 from models import db, Usuario, SolicitudAyuda, TicketSoporte, Respuesta, EstadoTicket, EstadoSolicitud, RolUsuario
-
+from datetime import datetime
+from forms import ResponderForm
 # PRIMERO creas la app
 app = Flask(__name__)
 app.secret_key = "clave_super_secreta"
@@ -18,7 +20,20 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Inicializar correctamente
 db.init_app(app)
 migrate = Migrate(app, db)
+#=============================================================
+#BORRAR CACHE
+@app.after_request
+def add_header(response):
+    """
+    Agrega cabeceras para evitar que el navegador guarde páginas en caché.
+    Esto previene que usuarios puedan volver atrás después de cerrar sesión.
+    """
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
 
+#=============================================================
 with app.app_context():
     db.create_all()
 
@@ -38,23 +53,22 @@ def load_user(user_id):
 # ======================
 # FUNCIONES AUXILIARES
 # ======================
-def get_current_user():
-    """Obtiene el objeto Usuario completo basado en la sesión."""
-    # Asume que 'db' y 'session' (de Flask) y 'Usuario' (de models) están importados
-    if "usuario_id" not in session:
-        return None
-    # Usamos db.session.get para obtener el usuario
-    # Corregido: Si usas SQLAlchemy ORM, usa Usuario.query.get() o db.session.get()
-    return Usuario.query.get(session["usuario_id"])
+# def get_current_user():
+#     """Obtiene el objeto Usuario completo basado en la sesión."""
+#     # Asume que 'db' y 'session' (de Flask) y 'Usuario' (de models) están importados
+#     if "usuario_id" not in session:
+#         return None
+#     # Usamos db.session.get para obtener el usuario
+#     # Corregido: Si usas SQLAlchemy ORM, usa Usuario.query.get() o db.session.get()
+#     return Usuario.query.get(session["usuario_id"])
 
 def is_soporte(usuario):
     """Verifica si el usuario tiene el rol de soporte o administrador."""
-    # Corregido: Para que el usuario de soporte vea los tickets, debe chequear
-    # SOPORTE o ADMIN (si ADMIN también maneja soporte).
     if not usuario:
         return False
-        
-    return usuario.rol == RolUsuario.ADMIN
+    
+    # CORREGIDO: Ahora verifica tanto ADMIN como SOPORTE
+    return usuario.rol in [RolUsuario.ADMIN, RolUsuario.SOPORTE]
 
 # =================================================================
 # FUNCIÓN DE CONTEXTO (IMPORTANTE): INYECTA 'current_user' GLOBALMENTE
@@ -147,10 +161,20 @@ def login():
 @login_required
 def dashboard():
     # Flask-Login ya sabe quién está autenticado → current_user
-    solicitudes_query = SolicitudAyuda.query.filter_by(id_usuario=current_user.id_usuario).order_by(SolicitudAyuda.id_solicitud.desc()).all()
+    
+    # Si el usuario es ADMIN, ve todas las solicitudes
+    if current_user.rol == RolUsuario.ADMIN:
+        solicitudes_query = SolicitudAyuda.query.order_by(SolicitudAyuda.id_solicitud.desc()).all()
+    else:
+        # Los usuarios normales ven solo sus propias solicitudes
+        solicitudes_query = SolicitudAyuda.query.filter_by(id_usuario=current_user.id_usuario).order_by(SolicitudAyuda.id_solicitud.desc()).all()
 
     solicitudes_para_html = []
     for sol in solicitudes_query:
+        # Obtener el nombre del creador (útil para que ADMIN sepa quién creó la solicitud)
+        creador = Usuario.query.get(sol.id_usuario)
+        nombre_creador = f"{creador.nombre} {creador.apellido}" if creador else "Usuario desconocido"
+        
         solicitudes_para_html.append({
             "id": sol.id_solicitud,
             "tipo_desastre": sol.tipo_desastre,
@@ -160,7 +184,8 @@ def dashboard():
             "prioridad": sol.prioridad,
             "descripcion_danos": sol.descripcion,
             "estado": sol.estado.name.capitalize().replace('_', ' '),
-            "fecha_solicitud": getattr(sol, "fecha_creacion", datetime.now())
+            "fecha_solicitud": getattr(sol, "fecha_creacion", datetime.now()),
+            "creador_nombre": nombre_creador  # Nombre del usuario que creó la solicitud
         })
 
     return render_template(
@@ -172,14 +197,16 @@ def dashboard():
 #   VER SOLICITUD
 # ======================
 @app.route('/ver_solicitud/<int:id>')
+@login_required
 def ver_solicitud(id):
-    if "usuario_id" not in session:
-        flash("Por favor inicia sesión para continuar.", "warning")
+    if not current_user.is_authenticated:
+        flash("Debes iniciar sesión para crear una solicitud.", "warning")
         return redirect(url_for("login"))
+    id_usuario = current_user.id_usuario
 
     # Buscar la solicitud y asegurarse de que pertenezca al usuario logueado
     # Usamos .first_or_404() para manejar el error de forma elegante
-    solicitud = SolicitudAyuda.query.filter_by(id_solicitud=id, id_usuario=session["usuario_id"]).first_or_404()
+    solicitud = SolicitudAyuda.query.filter_by(id_solicitud=id, id_usuario=current_user.id_usuario).first_or_404()
     
     # Crear un objeto amigable para pasar al HTML
     data_solicitud = {
@@ -200,13 +227,15 @@ def ver_solicitud(id):
 #   EDITAR SOLICITUD
 # ======================
 @app.route('/editar_solicitud/<int:id>', methods=["GET", "POST"])
+@login_required
 def editar_solicitud(id):
-    if "usuario_id" not in session:
-        flash("Debes iniciar sesión para editar una solicitud.", "warning")
+    if not current_user.is_authenticated:
+        flash("Debes iniciar sesión para crear una solicitud.", "warning")
         return redirect(url_for("login"))
+    id_usuario = current_user.id_usuario
 
     # 1. Buscar la solicitud y verificar permisos y estado
-    solicitud = SolicitudAyuda.query.filter_by(id_solicitud=id, id_usuario=session["usuario_id"]).first_or_404()
+    solicitud = SolicitudAyuda.query.filter_by(id_solicitud=id, id_usuario=current_user.id_usuario).first_or_404()
 
     # CORREGIDO: Comprobar el estado del ENUM EstadoSolicitud.PENDIENTE
     if solicitud.estado != EstadoSolicitud.PENDIENTE:
@@ -263,12 +292,14 @@ def editar_solicitud(id):
 #Elimina Solicitud
 #============
 @app.route('/eliminar_solicitud/<int:id_solicitud>', methods=["POST"])
+@login_required
 def eliminar_solicitud(id_solicitud):
-    if "usuario_id" not in session:
-        flash("Debes iniciar sesión para eliminar una solicitud.", "warning")
+    if not current_user.is_authenticated:
+        flash("Debes iniciar sesión para crear una solicitud.", "warning")
         return redirect(url_for("login"))
+    id_usuario = current_user.id_usuario
     
-    solicitud = SolicitudAyuda.query.filter_by(id_solicitud=id_solicitud, id_usuario=session["usuario_id"]).first_or_404()
+    solicitud = SolicitudAyuda.query.filter_by(id_solicitud=id_solicitud, id_usuario=current_user.id_usuario).first_or_404()
 
     # CORREGIDO: Comprobar el estado del ENUM EstadoSolicitud.PENDIENTE
     if solicitud.estado != EstadoSolicitud.PENDIENTE:
@@ -292,10 +323,12 @@ def eliminar_solicitud(id_solicitud):
 # ======================
 
 @app.route('/nueva_solicitud', methods=["GET", "POST"])
+@login_required
 def nueva_solicitud():
-    if "usuario_id" not in session:
+    if not current_user.is_authenticated:
         flash("Debes iniciar sesión para crear una solicitud.", "warning")
         return redirect(url_for("login"))
+    id_usuario = current_user.id_usuario
 
     if request.method == "POST":
         # 1. Obtener todos los campos del formulario, USANDO LOS NOMBRES EXACTOS DEL HTML
@@ -305,7 +338,7 @@ def nueva_solicitud():
         personas_afectadas_str = request.form.get("personas_afectadas")
         prioridad = request.form.get("prioridad")
         descripcion_danos = request.form.get("descripcion_danos")
-        id_usuario = session["usuario_id"]
+        
 
         # 2. Validación de campos obligatorios 
         if (not tipo_desastre or tipo_desastre.strip() == "") or \
@@ -356,10 +389,12 @@ def nueva_solicitud():
 #   CREAR TICKET DE SOPORTE
 # ======================================================
 @app.route('/crear_ticket', methods=['GET', 'POST'])
+@login_required
 def crear_ticket():
-    if "usuario_id" not in session:
-        flash("Debes iniciar sesión para crear un ticket de soporte.", "warning")
+    if not current_user.is_authenticated:
+        flash("Debes iniciar sesión para crear una solicitud.", "warning")
         return redirect(url_for("login"))
+    id_usuario = current_user.id_usuario
 
     if request.method == 'POST':
         asunto = request.form['asunto']
@@ -369,7 +404,7 @@ def crear_ticket():
         # pero pasándole el objeto ENUM correcto, que es lo que hace SQLAlchemy.
         # Si tu base de datos espera un ID, el ORM de SQLAlchemy lo manejará.
         nuevo_ticket = TicketSoporte(
-            id_usuario=session["usuario_id"],
+            id_usuario=current_user.id_usuario,
             asunto=asunto,
             descripcion=descripcion,
             estado=EstadoTicket.ABIERTO  # Pasamos el objeto ENUM
@@ -379,73 +414,51 @@ def crear_ticket():
         db.session.commit()
 
         flash("Tu ticket de soporte ha sido creado exitosamente.", "success")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('mis_tickets'))
 
     # Esta ruta debería apuntar a la plantilla crear_ticket.html
     return render_template('crear_ticket.html')
 
 #======================
-# VER TICKETS SOPORTE (CORREGIDA)
+# VER TODOS TICKETS SOPORTE (CORREGIDA)
 #=======================
 @app.route('/tickets')
+@login_required
 def mis_tickets():
-    # 1. Solución NameError: La función auxiliar ya está definida arriba.
-    usuario_actual = get_current_user()
-    if not usuario_actual:
-        flash("Por favor inicia sesión para acceder a tus tickets.", "warning")
-        return redirect(url_for("login"))
-    
-    # 2. Lógica de filtrado de tickets: corregir nombre de la clase y el filtro de rol
-    if is_soporte(usuario_actual):
-        # Soporte (admin) ve todos los tickets
-        # Corregido: Ordenamos por id_ticket ya que fecha_apertura no existe.
+    # Si el usuario es ADMIN o SOPORTE, ve todos los tickets
+    if current_user.rol in [RolUsuario.ADMIN, RolUsuario.SOPORTE]:
         tickets = TicketSoporte.query.order_by(TicketSoporte.id_ticket.desc()).all()
     else:
-        # Usuarios normales ven solo los tickets que crearon
-        # Corregido: Ordenamos por id_ticket ya que fecha_apertura no existe.
-        tickets = TicketSoporte.query.filter_by(
-            id_usuario=usuario_actual.id_usuario
-        ).order_by(TicketSoporte.id_ticket.desc()).all()
+        # Los usuarios normales ven solo sus propios tickets
+        tickets = (
+            TicketSoporte.query
+            .filter_by(id_usuario=current_user.id_usuario)
+            .order_by(TicketSoporte.id_ticket.desc())
+            .all()
+        )
 
-
-    # 3. Formatear la lista de tickets para la plantilla (es lo que espera mis_tickets.html)
+    # Preparar los datos para la plantilla
     tickets_para_html = []
     for ticket in tickets:
-        # Corregido: Si no tienes la relación 'creador' definida en models.py
-        # no se puede acceder a ticket.creador.nombre. Para evitar errores,
-        # lo cambiamos a una comprobación segura o a un valor por defecto.
-        # Asumiendo que has definido la relación 'creador' en models.py:
-        # creador = db.relationship('Usuario', backref='tickets', foreign_keys=[id_usuario])
-        
-        # Si TicketSoporte tiene una relación 'creador'
-        if hasattr(ticket, 'creador') and ticket.creador:
-            nombre_creador = ticket.creador.nombre
-        else:
-            # Caso de respaldo si la relación no existe o falla
-            nombre_creador = f"ID Usuario: {ticket.id_usuario}"
-        
-        # IMPORTANTE: Ya que eliminamos fecha_apertura de la BD, no podemos acceder a ella. 
-        # Si necesitas mostrar la fecha de creación, DEBES tener una columna de fecha.
-        # Por ahora, la omitiremos para evitar errores, o usaremos una marca de tiempo si existe otra.
-        
+        # Obtener el nombre del creador
+        nombre_creador = (
+            ticket.creador_ticket.nombre_completo if hasattr(ticket, "creador_ticket") and ticket.creador_ticket
+            else f"ID Usuario: {ticket.id_usuario}"
+        )
+
         tickets_para_html.append({
-            'id_ticket': ticket.id_ticket,
-            'asunto': ticket.asunto,
-            'estado': ticket.estado.name.capitalize().replace('_', ' '),
-            # Quitamos la referencia a fecha_apertura para evitar el AttributeError:
-            # 'fecha_apertura': ticket.fecha_apertura.strftime('%Y-%m-%d %H:%M') if ticket.fecha_apertura else 'N/A',
-            'creador_nombre': nombre_creador
+            "id_ticket": ticket.id_ticket,
+            "asunto": ticket.asunto,
+            "estado": ticket.estado.name.capitalize().replace("_", " "),
+            "creador_nombre": nombre_creador,
+            "fecha_creacion": ticket.fecha_creacion  # Agregar fecha para mostrarla
         })
 
-    # Renderiza la plantilla que lista los tickets
-    return render_template(
-        "mis_tickets.html", 
-        tickets=tickets_para_html, # Pasamos la lista formateada
-        usuario_actual=usuario_actual
-    )
+    # Renderizar la plantilla con los datos listos
+    return render_template("mis_tickets.html", tickets=tickets_para_html)
 
 # ======================
-#   RUTA 2: DETALLES DE TICKET (ver_ticket.html) (CORREGIDA)
+#   DETALLES DE TICKET (ver_ticket.html) (CORREGIDA)
 # ======================
 @app.route('/ticket/<int:id_ticket>', methods=['GET', 'POST'])
 @login_required
@@ -455,18 +468,19 @@ def ver_ticket(id_ticket):
         flash('Ticket no encontrado.', 'danger')
         return redirect(url_for('dashboard', tab='tickets'))
         
-    # 1. Instanciar el formulario de respuesta (CORRECCIÓN CLAVE)
-    form = RespuestaForm() 
-    
-    # 2. Determinar si el usuario es de Soporte para los permisos en HTML
-    # (Asegúrate de que current_user.rol existe y tiene un .name)
-    es_soporte = current_user.rol.name == 'SOPORTE' if current_user.rol else False
+    # 1. Instanciar el formulario de respuesta
+    form = ResponderForm()
 
-    # 3. Lógica para manejar el envío del formulario POST
+    # 2. Lógica para manejar el envío del formulario POST
     if form.validate_on_submit():
-        if ticket.estado.name != 'CERRADO':
+        # Verificar que el usuario sea ADMIN o SOPORTE
+        if current_user.rol not in [RolUsuario.ADMIN, RolUsuario.SOPORTE]:
+            flash('No tienes permisos para responder tickets.', 'error')
+            return redirect(url_for('ver_ticket', id_ticket=id_ticket))
+        
+        if ticket.estado != EstadoTicket.CERRADO:
             try:
-                # Crea el nuevo objeto Respuesta
+                # Crear el nuevo objeto Respuesta
                 nueva_respuesta = Respuesta(
                     id_usuario=current_user.id_usuario,
                     id_ticket=ticket.id_ticket,
@@ -475,9 +489,9 @@ def ver_ticket(id_ticket):
                 )
                 db.session.add(nueva_respuesta)
                 
-                # Regla de Negocio: Si un Soporte responde a un ticket ABIERTO,
+                # Regla de Negocio: Si un SOPORTE responde a un ticket ABIERTO,
                 # cámbialo a EN_PROCESO para indicar que está siendo atendido.
-                if es_soporte and ticket.estado.name == 'ABIERTO':
+                if current_user.rol == RolUsuario.SOPORTE and ticket.estado == EstadoTicket.ABIERTO:
                     ticket.estado = EstadoTicket.EN_PROCESO
                 
                 db.session.commit()
@@ -490,28 +504,28 @@ def ver_ticket(id_ticket):
         else:
             flash('No se puede responder a un ticket cerrado.', 'warning')
             
-    # 4. Renderizar la plantilla, pasando el ticket, el formulario y es_soporte
+    # 3. Renderizar la plantilla
     return render_template(
         'ver_ticket.html', 
         ticket=ticket, 
-        form=form, # <-- ¡LA VARIABLE QUE FALTABA!
-        es_soporte=es_soporte
+        form=form
     )
 
 #===========================
 #actualizar_ticket (CORREGIDA)
 #===========================
 @app.route('/actualizar_ticket/<int:id_ticket>', methods=['POST'])
+@login_required
 def actualizar_ticket(id_ticket):
     """
     Maneja el envío de una nueva respuesta y el posible cambio de estado del ticket.
     NOTA: Se ha adaptado para usar Flask-SQLAlchemy y los modelos.
     """
     # 1. Obtener usuario y verificar login
-    usuario_actual = get_current_user()
-    if not usuario_actual:
-        flash('Debes iniciar sesión para interactuar con los tickets.', 'warning')
-        return redirect(url_for('login'))
+    if not current_user.is_authenticated:
+        flash("Por favor inicia sesión...", "warning")
+        return redirect(url_for("login"))
+    usuario_actual = current_user
         
     ticket = TicketSoporte.query.filter_by(id_ticket=id_ticket).first_or_404()
 
@@ -575,8 +589,62 @@ def actualizar_ticket(id_ticket):
 
     return redirect(url_for('ver_ticket', id_ticket=id_ticket))
 #============================================================================
+#==================
+## CERRAR TICKETS
+#================
+@app.route('/ticket/<int:id_ticket>/cerrar', methods=['POST'])
+@login_required
+def cerrar_ticket(id_ticket):
+    # Buscar el ticket (CORREGIDO: Usa TicketSoporte, no Ticket)
+    ticket = TicketSoporte.query.get_or_404(id_ticket)
+    
+    # Verificar que el usuario sea ADMIN o SOPORTE (CORREGIDO: Usa el ENUM RolUsuario)
+    if current_user.rol not in [RolUsuario.ADMIN, RolUsuario.SOPORTE]:
+        flash('No tienes permisos para cerrar tickets. Solo ADMIN y SOPORTE pueden hacerlo.', 'error')
+        return redirect(url_for('ver_ticket', id_ticket=id_ticket))
+    
+    # Verificar que el ticket no esté ya cerrado (CORREGIDO: Usa el ENUM EstadoTicket)
+    if ticket.estado == EstadoTicket.CERRADO:
+        flash('Este ticket ya está cerrado.', 'warning')
+        return redirect(url_for('ver_ticket', id_ticket=id_ticket))
+    
+    # Cerrar el ticket (CORREGIDO: Usa el ENUM EstadoTicket)
+    ticket.estado = EstadoTicket.CERRADO
+    ticket.fecha_cierre = datetime.now()  # Opcional: si tienes este campo
+    
+    db.session.commit()
+    
+    flash('Ticket cerrado exitosamente.', 'success')
+    return redirect(url_for('ver_ticket', id_ticket=id_ticket))
 
+#==================
+## REABRIR TICKETS
+#================
+@app.route('/ticket/<int:id_ticket>/reabrir', methods=['POST'])
+@login_required
+def reabrir_ticket(id_ticket):
+    # Buscar el ticket
+    ticket = TicketSoporte.query.get_or_404(id_ticket)
+    
+    # Verificar que el usuario sea ADMIN o SOPORTE
+    if current_user.rol not in [RolUsuario.ADMIN, RolUsuario.SOPORTE]:
+        flash('No tienes permisos para reabrir tickets. Solo ADMIN y SOPORTE pueden hacerlo.', 'error')
+        return redirect(url_for('ver_ticket', id_ticket=id_ticket))
+    
+    # Verificar que el ticket esté cerrado
+    if ticket.estado != EstadoTicket.CERRADO:
+        flash('Este ticket ya está abierto.', 'warning')
+        return redirect(url_for('ver_ticket', id_ticket=id_ticket))
+    
+    # Reabrir el ticket
+    ticket.estado = EstadoTicket.ABIERTO
+    
+    db.session.commit()
+    
+    flash('Ticket reabierto exitosamente.', 'success')
+    return redirect(url_for('ver_ticket', id_ticket=id_ticket))
 
+#======================================================================================================================
 # ======================
 #   CERRAR SESIÓN
 # ======================
@@ -588,19 +656,9 @@ def logout():
 
 
 @app.route('/perfil')
+@login_required
 def perfil():
-    if "usuario_id" not in session: # <--- Esto es la corrección del corte
-        flash("Debes iniciar sesión para ver tu perfil.", "warning")
-        return redirect(url_for("login"))
-
-    usuario = get_current_user()
-    if not usuario:
-        flash("Usuario no encontrado.", "danger")
-        session.clear()
-        return redirect(url_for("login"))
-
-    # Aquí puedes agregar la lógica para mostrar el perfil
-    return render_template("perfil.html", usuario=usuario)
+    return render_template("perfil.html", usuario=current_user)
 
 
 # ======================
